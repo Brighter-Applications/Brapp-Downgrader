@@ -45,7 +45,7 @@ run_script() {
     source venv/bin/activate
 
     echo "Installing required packages..."
-    pip install requests tqdm
+    pip install requests tqdm zipfile
 
     echo "Running the script..."
     python3 Linux_Downgrader.py
