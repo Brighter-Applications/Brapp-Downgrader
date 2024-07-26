@@ -86,46 +86,34 @@ def run_steamcmd_commands(steamcmd_path, username, password):
         "download_depot 377160 540810 1558929737289295473"
     ]
 
-    print("Logging into SteamCMD...")
-    login_command = [steamcmd_exe, '+login', username, password, '+@ShutdownOnFailedCommand', '1', '+@NoPromptForPassword', '1']
-    process = subprocess.Popen(login_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    stdout, stderr = process.communicate()
-
-    output = stdout.decode()
-    print(output)
-    if stderr:
-        print(stderr.decode())
-
-    # Check if Steam Guard code is required
-    if "Steam Guard" in output:
-        steam_guard_code = input("Enter Steam Guard code: ")
-        login_command = [steamcmd_exe, '+login', username, password, steam_guard_code, '+@ShutdownOnFailedCommand', '1', '+@NoPromptForPassword', '1']
-        process = subprocess.Popen(login_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = process.communicate()
-        output = stdout.decode()
-        print(output)
-        if stderr:
-            print(stderr.decode())
 
     for command in commands:
         print(f"Executing command: {command}")
-        process = subprocess.Popen(
-            [steamcmd_exe, f'+{command}'],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
-        stdout, stderr = process.communicate()
-        print(stdout.decode())
-        if stderr:
-            print(stderr.decode())
+        execute_command(command)
 
-    print("Logging out of SteamCMD...")
-    logout_command = [steamcmd_exe, '+quit']
-    process = subprocess.Popen(logout_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    stdout, stderr = process.communicate()
-    print(stdout.decode())
-    if stderr:
-        print(stderr.decode())
+    def execute_command(command):
+            process = subprocess.Popen(
+                [steamcmd_exe, '+login', username, password, '+@ShutdownOnFailedCommand', '1', '+@NoPromptForPassword', '1', f'+{command}', '+quit'],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                stdin=subprocess.PIPE
+            )
+            while True:
+                output = process.stdout.readline().decode()
+                if output == '' and process.poll() is not None:
+                    break
+                if output:
+                    print(output.strip())
+                    if "Steam Guard" in output:
+                        steam_guard_code = input("Enter Steam Guard code: ")
+                        process.stdin.write(f"{steam_guard_code}\n".encode())
+                        process.stdin.flush()
+            stderr = process.stderr.read().decode()
+            if stderr:
+                print(stderr)
+
+
+
 
 def move_downloaded_files(fallout4_path, steamcmd_path):
     print("Moving downloaded files and directories to Fallout 4 installation directory...")
