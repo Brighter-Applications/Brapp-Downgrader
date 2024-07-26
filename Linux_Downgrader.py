@@ -8,15 +8,12 @@ import glob
 
 def find_fallout4_installation():
     print("Searching for Fallout 4 installation...")
-    home_dir = os.path.expanduser("~")
-    steam_paths = [
-        os.path.join(home_dir, ".steam", "steam", "steamapps", "common", "Fallout 4"),
-        os.path.join(home_dir, ".local", "share", "Steam", "steamapps", "common", "Fallout 4")
-    ]
-    for path in steam_paths:
-        if os.path.exists(path):
-            print(f"Fallout 4 found at: {path}")
-            return path
+    for drive in '/mnt/':
+        if os.path.exists(drive):
+            fallout4_paths = glob.glob(f"{drive}**/steamapps/common/Fallout 4", recursive=True)
+            if fallout4_paths:
+                print(f"Fallout 4 found at: {fallout4_paths[0]}")
+                return fallout4_paths[0]
     print("Fallout 4 installation not found.")
     return None
 
@@ -24,6 +21,10 @@ def find_app_manifest(fallout4_path):
     print("Searching for Steam app manifest...")
     steamapps_path = os.path.dirname(os.path.dirname(fallout4_path))
     manifest_path = os.path.join(steamapps_path, 'appmanifest_377160.acf')
+    
+    print(f"Fallout 4 path: {fallout4_path}")
+    print(f"Steamapps path: {steamapps_path}")
+    print(f"Manifest path: {manifest_path}")
     
     if os.path.exists(manifest_path):
         print(f"App manifest found at: {manifest_path}")
@@ -40,6 +41,17 @@ def check_and_download_steamcmd():
         print("SteamCMD already exists.")
         return steamcmd_path
 
+    common_paths = [
+        os.path.join(os.getenv('HOME'), 'SteamCMD'),
+        '/usr/local/steamcmd',
+        '/usr/steamcmd'
+    ]
+
+    for path in common_paths:
+        if os.path.exists(os.path.join(path, 'steamcmd.sh')):
+            print(f"SteamCMD found in {path}.")
+            return path
+
     script_dir = os.path.dirname(os.path.abspath(__file__))
     steamcmd_path = os.path.join(script_dir, 'steamcmd')
 
@@ -47,7 +59,7 @@ def check_and_download_steamcmd():
     os.makedirs(steamcmd_path, exist_ok=True)
     url = 'https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz'
     response = requests.get(url, stream=True)
-    tar_path = os.path.join(steamcmd_path, 'steamcmd.tar.gz')
+    tar_path = os.path.join(steamcmd_path, 'steamcmd_linux.tar.gz')
     with open(tar_path, 'wb') as f:
         for chunk in response.iter_content(chunk_size=1024):
             if chunk:
@@ -64,7 +76,17 @@ def run_steamcmd_commands(steamcmd_path, username, password):
         "download_depot 377160 377163 5819088023757897745",
         "download_depot 377160 377162 5847529232406005096",
         "download_depot 377160 377164 2178106366609958945",
-        "download_depot 377160 435870 1691678129192680960"
+        "download_depot 377160 435870 1691678129192680960",
+        "download_depot 377160 435871 5106118861901111234",
+        "download_depot 377160 435880 1255562923187931216",
+        "download_depot 377160 435881 1207717296920736193",
+        "download_depot 377160 435882 8482181819175811242",
+        "download_depot 377160 480630 5527412439359349504",
+        "download_depot 377160 480631 6588493486198824788",
+        "download_depot 377160 393885 5000262035721758737",
+        "download_depot 377160 490650 4873048792354485093",
+        "download_depot 377160 393895 7677765994120765493",
+        "download_depot 377160 540810 1558929737289295473"
     ]
 
     for command in commands:
@@ -79,36 +101,29 @@ def run_steamcmd_commands(steamcmd_path, username, password):
         if stderr:
             print(stderr.decode())
 
-    print("Moving downloaded files to Fallout 4 installation directory...")
-    # Add code to move files as needed
-    print("Files moved successfully.")
-    print("Setting app manifest to read-only.")
-    # Add code to set app manifest to read-only
-    print("App manifest set to read-only.")
-    print("Deactivating and removing virtual environment...")
-    # Add code to deactivate and remove virtual environment if applicable
-    print("Script execution completed.")
-
 def move_downloaded_files(fallout4_path, steamcmd_path):
     print("Moving downloaded files and directories to Fallout 4 installation directory...")
     content_path = os.path.join(steamcmd_path, 'steamapps', 'content', 'app_377160')
     
     data_folders = glob.glob(f"{content_path}/depot*/data/**/*", recursive=True)
     for src_item in data_folders:
-        dst_item = os.path.join(fallout4_path, 'data', os.path.relpath(src_item, os.path.join(content_path, 'depot*', 'data')))
         if os.path.isdir(src_item):
+            dst_item = os.path.join(fallout4_path, 'data', os.path.relpath(src_item, os.path.join(content_path, 'depot*', 'data')))
             os.makedirs(dst_item, exist_ok=True)
         elif os.path.isfile(src_item):
+            dst_item = os.path.join(fallout4_path, 'data', os.path.relpath(src_item, os.path.join(content_path, 'depot*', 'data')))
             os.makedirs(os.path.dirname(dst_item), exist_ok=True)
             shutil.move(src_item, dst_item)
     
     depot_folders = glob.glob(f"{content_path}/depot*/*")
     for src_item in depot_folders:
-        if 'data' not in src_item:
-            dst_item = os.path.join(fallout4_path, os.path.basename(src_item))
+        if 'data' not in os.path.basename(src_item):
+            dst_item = os.path.join(fallout4_path, os.path.relpath(src_item, content_path))
             if os.path.isdir(src_item):
+                os.makedirs(dst_item, exist_ok=True)
                 shutil.move(src_item, dst_item)
             elif os.path.isfile(src_item):
+                os.makedirs(os.path.dirname(dst_item), exist_ok=True)
                 shutil.move(src_item, dst_item)
     
     print("Files and directories moved successfully.")
