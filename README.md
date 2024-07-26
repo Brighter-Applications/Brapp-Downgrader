@@ -6,7 +6,7 @@ This is a Downgrader tool for Fallout 4, designed to roll back the game to the p
 
 ### Windows
 
-1. Make sure Steam Guard is completely disabled.
+1. Download and Extract the downgrader found in the [Releases](https://github.com/Brighter-Applications/Brapp-Downgrader/releases) section.
 2. Run the `Downgrade.bat` file, **AS ADMINISTRATOR!** Chocolatey requires admin rights to install packages (such as Python).
 3. Follow the on-screen instructions to initiate the downgrade process.
 
