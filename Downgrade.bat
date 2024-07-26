@@ -1,6 +1,5 @@
 @echo off
 
-
 :: Function to check if Chocolatey is installed
 :check_chocolatey
 where choco >nul 2>nul
@@ -42,6 +41,28 @@ if %errorlevel%==0 (
     )
 )
 
+:: Function to check if pip is installed and updated
+:check_pip
+python -m ensurepip --default-pip >nul 2>nul
+if %errorlevel%==0 (
+    echo Pip is already installed.
+) else (
+    echo Pip is not installed. Installing pip...
+    python -m ensurepip
+    if %errorlevel% neq 0 (
+        echo Failed to install pip. Please resolve the issue manually.
+        pause
+        exit /b 1
+    )
+)
+echo Updating pip to the latest version...
+python -m pip install --upgrade pip
+if %errorlevel% neq 0 (
+    echo Failed to update pip. Please resolve the issue manually.
+    pause
+    exit /b 1
+)
+
 :: Function to create a virtual environment, install packages, run the script, and delete the environment
 echo Creating virtual environment...
 python -m venv venv
@@ -72,7 +93,3 @@ echo Script execution completed.
 
 pause
 exit /b 0
-
-
-:: Keep the terminal open
-pause
