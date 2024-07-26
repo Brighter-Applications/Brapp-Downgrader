@@ -58,6 +58,7 @@ if %errorlevel% neq 0 (
     echo Python script failed with error code %errorlevel%. Exiting...
     call venv\Scripts\deactivate
     rmdir /s /q venv
+    pause
     exit /b %errorlevel%
 )
 

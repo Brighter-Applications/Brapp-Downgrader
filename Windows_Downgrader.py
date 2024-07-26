@@ -1,9 +1,9 @@
 import os
 import shutil
-import subprocess
 import requests
 import zipfile
 import glob
+import asyncio
 
 def find_fallout4_installation():
     print("Searching for Fallout 4 installation...")
@@ -63,57 +63,8 @@ def check_and_download_steamcmd():
     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
         zip_ref.extractall(steamcmd_path)
     print("SteamCMD downloaded and extracted.")
+    print("steamcmd path: " + steamcmd_path)
     return steamcmd_path
-
-def run_steamcmd_commands(steamcmd_path, username, password):
-    print("Running SteamCMD commands...")
-    steamcmd_exe = os.path.join(steamcmd_path, 'steamcmd.exe')
-    commands = [
-        "download_depot 377160 377161 7497069378349273908",
-        "download_depot 377160 377163 5819088023757897745",
-        "download_depot 377160 377162 5847529232406005096",
-        "download_depot 377160 377164 2178106366609958945",
-        "download_depot 377160 435870 1691678129192680960",
-        "download_depot 377160 435871 5106118861901111234",
-        "download_depot 377160 435880 1255562923187931216",
-        "download_depot 377160 435881 1207717296920736193",
-        "download_depot 377160 435882 8482181819175811242",
-        "download_depot 377160 480630 5527412439359349504",
-        "download_depot 377160 480631 6588493486198824788",
-        "download_depot 377160 393885 5000262035721758737",
-        "download_depot 377160 490650 4873048792354485093",
-        "download_depot 377160 393895 7677765994120765493",
-        "download_depot 377160 540810 1558929737289295473"
-    ]
-
-
-    for command in commands:
-        print(f"Executing command: {command}")
-        execute_command(command)
-
-    def execute_command(command):
-            process = subprocess.Popen(
-                [steamcmd_exe, '+login', username, password, '+@ShutdownOnFailedCommand', '1', '+@NoPromptForPassword', '1', f'+{command}', '+quit'],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                stdin=subprocess.PIPE
-            )
-            while True:
-                output = process.stdout.readline().decode()
-                if output == '' and process.poll() is not None:
-                    break
-                if output:
-                    print(output.strip())
-                    if "Steam Guard" in output:
-                        steam_guard_code = input("Enter Steam Guard code: ")
-                        process.stdin.write(f"{steam_guard_code}\n".encode())
-                        process.stdin.flush()
-            stderr = process.stderr.read().decode()
-            if stderr:
-                print(stderr)
-
-
-
 
 def move_downloaded_files(fallout4_path, steamcmd_path):
     print("Moving downloaded files and directories to Fallout 4 installation directory...")
@@ -139,7 +90,40 @@ def set_app_manifest_read_only(app_manifest_path):
     os.chmod(app_manifest_path, 0o444)
     print("App manifest set to read-only.")
 
-def main():
+def create_steamcmd_script(username, password, steam_guard_code, script_path):
+    with open(script_path, 'w') as file:
+        file.write(f"login {username} {password} {steam_guard_code}\n")
+        file.write("download_depot 377160 377163 5819088023757897745\n")
+        file.write("download_depot 377160 377161 7497069378349273908\n")
+        file.write("download_depot 377160 377162 5847529232406005096\n")
+        file.write("download_depot 377160 377164 2178106366609958945\n")
+        file.write("download_depot 377160 435870 1691678129192680960\n")
+        file.write("download_depot 377160 435871 5106118861901111234\n")
+        file.write("download_depot 377160 435880 1255562923187931216\n")
+        file.write("download_depot 377160 435881 1207717296920736193\n")
+        file.write("download_depot 377160 435882 8482181819175811242\n")
+        file.write("download_depot 377160 480630 5527412439359349504\n")
+        file.write("download_depot 377160 480631 6588493486198824788\n")
+        file.write("download_depot 377160 393885 5000262035721758737\n")
+        file.write("download_depot 377160 490650 4873048792354485093\n")
+        file.write("download_depot 377160 393895 7677765994120765493\n")
+        file.write("download_depot 377160 540810 1558929737289295473\n")
+        file.write("quit\n")
+
+async def run_steamcmd_with_script(steamcmd_path, script_path):
+    steamcmd_exe = os.path.join(steamcmd_path, 'steamcmd.exe')
+    process = await asyncio.create_subprocess_exec(
+        steamcmd_exe, f'+runscript {script_path}',
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE
+    )
+
+    stdout, stderr = await process.communicate()
+    print(stdout.decode())
+    if stderr:
+        print(stderr.decode())
+
+async def main():
     fallout4_path = find_fallout4_installation()
     if not fallout4_path:
         return
@@ -152,10 +136,14 @@ def main():
     print("SteamCMD Path: " + steamcmd_path)
     username = input("Enter Steam username: ")
     password = input("Enter Steam password: ")
+    steam_guard_code = input("Enter Steam Guard code: ")
 
-    run_steamcmd_commands(steamcmd_path, username, password)
+    script_path = os.path.join(os.path.dirname(__file__), 'steamcmd_script.txt')
+    create_steamcmd_script(username, password, steam_guard_code, script_path)
+
+    await run_steamcmd_with_script(steamcmd_path, script_path)
     move_downloaded_files(fallout4_path, steamcmd_path)
     set_app_manifest_read_only(app_manifest_path)
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

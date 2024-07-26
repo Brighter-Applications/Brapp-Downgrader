@@ -12,9 +12,7 @@ This is a Downgrader tool for Fallout 4, designed to roll back the game to the p
 
 ### Linux
 
-1. Make sure Steam Guard is completely disabled.
-2. Run the `Downgrade.sh` file.
-3. Follow the on-screen instructions to initiate the downgrade process.
+    LINUX VERSION DOES NOT CURRENTLY WORK. WINDOWS USERS SHOULD USE THE WINDOWS VERSION, LINUX USERS SHOULD USE [Zerratar's Downgrader] (https://github.com/zerratar/fallout4-downgrader)
 
 ## Important Note
 
