@@ -14,7 +14,8 @@ Please note, this process *will* take a long time, as it involves downloading th
 
 ### Linux
 
-    LINUX VERSION DOES NOT CURRENTLY WORK. WINDOWS USERS SHOULD USE THE WINDOWS VERSION, LINUX USERS SHOULD USE [Zerratar's Downgrader] (https://github.com/zerratar/fallout4-downgrader)
+LINUX VERSION DOES NOT CURRENTLY WORK. WINDOWS USERS SHOULD USE THE WINDOWS VERSION!
+LINUX USERS SHOULD USE [Zerratar's Downgrader] (https://github.com/zerratar/fallout4-downgrader)
 
 ## Important Note
 You may wish to proceed with caution and backup your game files before using this tool. The Downgrader is provided as-is, and the developers are not responsible for any issues that may arise from its use.
