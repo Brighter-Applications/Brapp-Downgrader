@@ -93,7 +93,6 @@ def set_app_manifest_read_only(app_manifest_path):
 def create_steamcmd_script(username, password, steam_guard_code, script_path):
     with open(script_path, 'w') as file:
         file.write(f"login {username} {password} {steam_guard_code}\n")
-        file.write("download_depot 377160 377163 5819088023757897745\n")
         file.write("download_depot 377160 377161 7497069378349273908\n")
         file.write("download_depot 377160 377162 5847529232406005096\n")
         file.write("download_depot 377160 377164 2178106366609958945\n")
@@ -108,6 +107,7 @@ def create_steamcmd_script(username, password, steam_guard_code, script_path):
         file.write("download_depot 377160 490650 4873048792354485093\n")
         file.write("download_depot 377160 393895 7677765994120765493\n")
         file.write("download_depot 377160 540810 1558929737289295473\n")
+        file.write("download_depot 377160 377163 5819088023757897745\n")
         file.write("quit\n")
 
 async def run_steamcmd_with_script(steamcmd_path, script_path):
