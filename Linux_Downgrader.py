@@ -1,20 +1,23 @@
+import glob
 import os
 import shutil
 import subprocess
+import sys
 import requests
-import zipfile
-from tqdm import tqdm
-import glob
 
 def find_fallout4_installation():
     print("Searching for Fallout 4 installation...")
-    for drive in '/mnt/':
-        if os.path.exists(drive):
-            fallout4_paths = glob.glob(f"{drive}**/steamapps/common/Fallout 4", recursive=True)
-            if fallout4_paths:
-                print(f"Fallout 4 found at: {fallout4_paths[0]}")
-                return fallout4_paths[0]
-    print("Fallout 4 installation not found.")
+    home_dir = os.getenv('HOME')
+    steam_paths = [
+        os.path.join(home_dir, ".steam/steam/steamapps/common/Fallout 4"),
+        os.path.join(home_dir, ".local/share/Steam/steamapps/common/Fallout 4"),
+        os.path.join(home_dir, ".var/app/com.valvesoftware.Steam/.steam/steam/steamapps/common/Fallout 4"),
+        "/snap/steam/common/.local/share/steam"
+    ]
+    for path in steam_paths:
+        if os.path.exists(path):
+            print(f"Fallout 4 found at: {path}")
+            return path
     return None
 
 def find_app_manifest(fallout4_path):
@@ -33,33 +36,24 @@ def find_app_manifest(fallout4_path):
     return None
 
 def check_and_download_steamcmd():
-    print("Checking for SteamCMD...")
-    steamcmd_path = os.path.join(os.getcwd(), 'steamcmd')
-    steamcmd_exe = os.path.join(steamcmd_path, 'steamcmd.sh')
-
-    if os.path.exists(steamcmd_exe):
-        print("SteamCMD already exists.")
-        return steamcmd_path
-
-    common_paths = [
-        os.path.join(os.getenv('HOME'), 'SteamCMD'),
-        '/usr/local/steamcmd',
-        '/usr/steamcmd'
-    ]
-
-    for path in common_paths:
-        if os.path.exists(os.path.join(path, 'steamcmd.sh')):
-            print(f"SteamCMD found in {path}.")
-            return path
+#    print("Checking for SteamCMD...")
+#    steamcmd_exe = shutil.which('steamcmd')
+#    steamcmd_path = os.path.dirname(steamcmd_exe) if steamcmd_exe else None
+#    if steamcmd_path:
+#        print("SteamCMD already exists.")
+#        return steamcmd_path
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
     steamcmd_path = os.path.join(script_dir, 'steamcmd')
+    if os.path.exists(steamcmd_path):
+        print("SteamCMD already downloaded.")
+        return steamcmd_path
 
     print("SteamCMD not found. Downloading SteamCMD...")
     os.makedirs(steamcmd_path, exist_ok=True)
     url = 'https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz'
     response = requests.get(url, stream=True)
-    tar_path = os.path.join(steamcmd_path, 'steamcmd_linux.tar.gz')
+    tar_path = os.path.join(script_dir, 'steamcmd_linux.tar.gz')
     with open(tar_path, 'wb') as f:
         for chunk in response.iter_content(chunk_size=1024):
             if chunk:
@@ -67,39 +61,6 @@ def check_and_download_steamcmd():
     subprocess.run(['tar', '-xvzf', tar_path, '-C', steamcmd_path])
     print("SteamCMD downloaded and extracted.")
     return steamcmd_path
-
-def run_steamcmd_commands(steamcmd_path, username, password):
-    print("Running SteamCMD commands...")
-    steamcmd_exe = os.path.join(steamcmd_path, 'steamcmd.sh')
-    commands = [
-        "download_depot 377160 377161 7497069378349273908",
-        "download_depot 377160 377163 5819088023757897745",
-        "download_depot 377160 377162 5847529232406005096",
-        "download_depot 377160 377164 2178106366609958945",
-        "download_depot 377160 435870 1691678129192680960",
-        "download_depot 377160 435871 5106118861901111234",
-        "download_depot 377160 435880 1255562923187931216",
-        "download_depot 377160 435881 1207717296920736193",
-        "download_depot 377160 435882 8482181819175811242",
-        "download_depot 377160 480630 5527412439359349504",
-        "download_depot 377160 480631 6588493486198824788",
-        "download_depot 377160 393885 5000262035721758737",
-        "download_depot 377160 490650 4873048792354485093",
-        "download_depot 377160 393895 7677765994120765493",
-        "download_depot 377160 540810 1558929737289295473"
-    ]
-
-    for command in commands:
-        print(f"Executing command: {command}")
-        process = subprocess.Popen(
-            [steamcmd_exe, '+login', username, password, '+@ShutdownOnFailedCommand', '1', '+@NoPromptForPassword', '1', f'+{command}', '+quit'],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
-        stdout, stderr = process.communicate()
-        print(stdout.decode())
-        if stderr:
-            print(stderr.decode())
 
 def move_downloaded_files(fallout4_path, steamcmd_path):
     print("Moving downloaded files and directories to Fallout 4 installation directory...")
@@ -133,7 +94,24 @@ def set_app_manifest_read_only(app_manifest_path):
     os.chmod(app_manifest_path, 0o444)
     print("App manifest set to read-only.")
 
+def run_steamcmd(steamcmd_path, username):
+# TODO: detect installed steamcmd download path ($HOME/.local/share/Steam/steamcmd/ on test machine)
+# but could be any of the variations of the Steam install path at the top
+#    steamcmd_exe = os.path.join(steamcmd_path, 'steamcmd')
+#    if not os.path.exists(steamcmd_exe):
+#        steamcmd_exe = os.path.join(steamcmd_path, 'steamcmd.sh')
+    steamcmd_exe = os.path.join(steamcmd_path, 'steamcmd.sh')
+
+    steamcmd_script = os.path.join(os.getcwd(), 'steamcmd_script.txt')
+    process = subprocess.Popen([steamcmd_exe, '+force_download_dir', steamcmd_path, '+login', username, '+runscript', steamcmd_script])
+    process.wait()
+    print("SteamCMD process has finished.")
+
 def main():
+    if os.geteuid() == 0:
+        print("Please do not run this script as root.")
+        sys.exit(1)
+
     fallout4_path = find_fallout4_installation()
     if not fallout4_path:
         return
@@ -143,11 +121,10 @@ def main():
         return
 
     steamcmd_path = check_and_download_steamcmd()
-    print("SteamCMD Path: " + steamcmd_path)
+    print("steamcmd path: " + steamcmd_path)
     username = input("Enter Steam username: ")
-    password = input("Enter Steam password: ")
+    run_steamcmd(steamcmd_path, username)
 
-    run_steamcmd_commands(steamcmd_path, username, password)
     move_downloaded_files(fallout4_path, steamcmd_path)
     set_app_manifest_read_only(app_manifest_path)
 
