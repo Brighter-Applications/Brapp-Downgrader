@@ -1,4 +1,4 @@
-# Brapp Downgrader
+# Brapps Downgrader
 
 This is a Downgrader tool for Fallout 4, designed to roll back the game to the previous version before the Bethesda update. 
 
