@@ -1,7 +1,8 @@
 import tkinter as tk
 import asyncio
 import os
-import requests
+import http.client
+import urllib.parse
 import zipfile
 import glob
 import shutil
@@ -121,35 +122,22 @@ def find_app_manifest(fallout4_path):
 def check_and_download_steamcmd():
     root.after(0, lambda: update_status("Checking and downloading SteamCMD..."))
     steamcmd_path = os.path.join(os.getcwd(), 'steamcmd')
-    steamcmd_exe = os.path.join(steamcmd_path, 'steamcmd.exe')
-
-    if os.path.exists(steamcmd_exe):
-        root.after(0, lambda: update_status("SteamCMD already exists."))
-        return steamcmd_path
-
-    common_paths = [
-        os.path.join(os.getenv('ProgramFiles(x86)'), 'SteamCMD'),
-        os.path.join(os.getenv('ProgramFiles'), 'SteamCMD'),
-        os.path.join(os.getenv('ProgramW6432'), 'SteamCMD')
-    ]
-
-    for path in common_paths:
-        if os.path.exists(os.path.join(path, 'steamcmd.exe')):
-            root.after(0, lambda: update_status(f"SteamCMD found in {path}."))
-            return path
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
     steamcmd_path = os.path.join(script_dir, 'steamcmd')
 
-    root.after(0, lambda: update_status("SteamCMD not found. Downloading SteamCMD..."))
+    root.after(0, lambda: update_status("Downloading SteamCMD..."))
     os.makedirs(steamcmd_path, exist_ok=True)
     url = 'https://steamcdn-a.akamaihd.net/client/installer/steamcmd.zip'
-    response = requests.get(url, stream=True)
+    parsed_url = urllib.parse.urlparse(url)
+    conn = http.client.HTTPSConnection(parsed_url.netloc)
+    conn.request("GET", parsed_url.path)
+    response = conn.getresponse()
     zip_path = os.path.join(steamcmd_path, 'steamcmd.zip')
     with open(zip_path, 'wb') as f:
-        for chunk in response.iter_content(chunk_size=1024):
-            if chunk:
-                f.write(chunk)
+        while chunk := response.read(1024):
+            f.write(chunk)
+    conn.close()
     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
         zip_ref.extractall(steamcmd_path)
     root.after(0, lambda: update_status("SteamCMD downloaded and extracted."))
@@ -227,6 +215,11 @@ async def create_steamcmd_script(username, password, steam_guard_code, script_pa
 
 async def run_steamcmd_with_script(steamcmd_path, script_path):
     root.after(0, lambda: update_status("Running SteamCMD with script..."))
+    asyncio.sleep(4)
+    root.after(0, lambda: update_status("This will take a while, go grab a cup of tea."))
+    # Place a button temporarily to open the steamapps/content/app_377160 folder in windows explorer
+    open_folder_button = tk.Button(root, text="Open folder", command=lambda: threading.Thread(target=open_folder, args=(steamcmd_path,)).start(), font=("Helvetica", 12))
+    open_folder_button.pack(pady=20)
     steamcmd_exe = os.path.join(steamcmd_path, 'steamcmd.exe')
     process = await asyncio.create_subprocess_exec(
         steamcmd_exe, f'+runscript {script_path}',
@@ -243,9 +236,12 @@ async def run_steamcmd_with_script(steamcmd_path, script_path):
                 break
 
     await asyncio.gather(
-        stream_output(process.stdout),
-        stream_output(process.stderr)
+    stream_output(process.stdout),
+    stream_output(process.stderr)
     )
+        
+def open_folder(steamcmd_path):
+    os.system(f"start explorer {os.path.join(steamcmd_path, 'steamapps', 'content', 'app_377160')}")
 
 async def scriptpart1():
     fallout4_path = find_fallout4_installation()
