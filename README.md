@@ -6,9 +6,10 @@ This is a Downgrader tool for Fallout 4, designed to roll back the game to the p
 
 ### Windows
 
-1. Download and Extract the downgrader found in the [Releases](https://github.com/Brighter-Applications/Brapp-Downgrader/releases) section.
-2. Run the `Downgrade.bat` file, **AS ADMINISTRATOR!** Chocolatey requires admin rights to install packages (such as Python).
-3. Follow the on-screen instructions to initiate the downgrade process.
+1. Download Python 3.12 from here: https://apps.microsoft.com/detail/9ncvdn91xzqp?hl=en-mu&gl=MU
+2. Download and Extract the downgrader found in the [Releases](https://github.com/Brighter-Applications/Brapp-Downgrader/releases) section.
+3. Run the BAT file!
+4. Follow the on-screen instructions to initiate the downgrade process.
 
 **Please note, this process *will* take a long time, as it involves downloading the previous version of the game. Please be patient and allow the process to complete. If you are anxious about whether the process is working, you can check if the files are downloading in
  ```steamcmd/steamapps/content/app_377160```.
