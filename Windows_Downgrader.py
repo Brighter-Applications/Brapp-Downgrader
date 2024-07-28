@@ -278,7 +278,7 @@ async def scriptpart2():
         await asyncio.sleep(1)
     # Delete the credentials frame
     root.credentials_frame.pack_forget()
-    root.geometry("470x150")
+    root.geometry("470x240")
     steam_guard = steam_guard_code.get() if steam_guard_code.get() else ""
     print(username.get(), password.get(), steam_guard)
     await asyncio.sleep(5)
